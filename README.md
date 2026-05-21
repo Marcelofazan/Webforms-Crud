@@ -6,7 +6,7 @@ Exemplo de criação CRUD C# WebForms com banco de dados MySQL.
 |-----------|-----------|
 | **Blob** | Seleção de Arquivos de imagens, gravação e visualização |
 
-#### Execução da aplicação
+#### Executar a aplicação
 - Para executar a aplicação é necessário a execução do Script do MySQL.
 - Necessário varinha mágica na Solução do Visual Studio 
 
