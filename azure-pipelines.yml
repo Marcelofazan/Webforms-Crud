@@ -2,31 +2,26 @@
 trigger:
 - master
 
-# Define o uso de agentes Windows hospedados pela Microsoft (essencial para o MSBuild)
 pool:
   vmImage: 'windows-latest'
 
-# Definição de variáveis reutilizáveis no escopo global
 variables:
-  solutionPath: '**/*.slnx'       # Mapeia o seu arquivo de solução moderno
-  projectPath: '**/Simples.csproj' # Mapeia o seu projeto WebForms específico
+  solutionPath: '**/*.slnx'
+  projectPath: '**/Simples.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
 steps:
-# 1. Garante que a ferramenta NuGet está disponível no ambiente
 - task: NuGetToolInstaller@1
   displayName: 'Garantir Instalador do NuGet'
 
-# 2. Restaura os pacotes contornando o erro de falta de mapeamento de diretório
 - task: NuGetCommand@2
   displayName: 'Restaurar Pacotes NuGet (.NET Framework)'
   inputs:
     command: 'restore'
     restoreSolution: '$(projectPath)'
-    arguments: '-PackagesDirectory $(Build.SourcesDirectory)/packages' # Força a criação da pasta na raiz
+    arguments: '-PackagesDirectory $(Build.SourcesDirectory)/packages'
 
-# 3. Executa a compilação oficial através das ferramentas do Visual Studio / MSBuild focando no projeto
 - task: VSBuild@1
   displayName: 'Compilar Projeto WebForms / .NET Framework'
   inputs:
@@ -36,11 +31,9 @@ steps:
     configuration: '$(buildConfiguration)'
     clean: true
 
-# 4. Publica os artefatos compilados (arquivos prontos para o IIS) no servidor do Azure DevOps
 - task: PublishBuildArtifacts@1
   displayName: 'Publicar Artefato Gerado'
   inputs:
     PathtoPublish: '$(build.artifactStagingDirectory)'
     ArtifactName: 'drop-webforms'
     publishLocation: 'Container'
-Use o código com cuidado
