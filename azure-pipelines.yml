@@ -5,27 +5,27 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
+  # Mapeamos o arquivo de solução (.slnx) para que o NuGet gerencie nativamente a pasta 'packages'
   solutionPath: '**/*.slnx'
   projectPath: '**/Simples.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
 steps:
-# 1. Força o uso do NuGet v6, totalmente compatível com tarefas do Azure DevOps e .NET Framework 4.7.2
+# 1. Ajustado para usar uma versão existente e compatível no pool do Azure DevOps
 - task: NuGetToolInstaller@1
   displayName: 'Garantir Instalador do NuGet (Versão 6.x)'
   inputs:
-    versionSpec: '6.12.0' 
+    versionSpec: '6.12.5' 
 
-# 2. Restaura usando o comando padrão, especificando o diretório de pacotes
+# 2. Restaurando pacotes baseando-se no arquivo de Solução (evita erros de caminho relativo)
 - task: NuGetCommand@2
-  displayName: 'Restaurar Pacotes NuGet (.NET Framework)'
+  displayName: 'Restaurar Pacotes NuGet via Solução'
   inputs:
     command: 'restore'
-    restoreSolution: '$(projectPath)'
-    arguments: '-PackagesDirectory $(Build.SourcesDirectory)\packages'
+    restoreSolution: '$(solutionPath)'
 
-# 3. Executa a compilação do MSBuild
+# 3. Compilação do projeto WebForms via MSBuild focado no .csproj correto
 - task: VSBuild@1
   displayName: 'Compilar Projeto WebForms / .NET Framework'
   inputs:
@@ -35,7 +35,7 @@ steps:
     configuration: '$(buildConfiguration)'
     clean: true
 
-# 4. Publica os artefatos compilados
+# 4. Publicação dos artefatos
 - task: PublishBuildArtifacts@1
   displayName: 'Publicar Artefato Gerado'
   inputs:
