@@ -11,15 +11,21 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+# 1. Força o uso do NuGet v6, totalmente compatível com tarefas do Azure DevOps e .NET Framework 4.7.2
 - task: NuGetToolInstaller@1
-  displayName: 'Garantir Instalador do NuGet'
+  displayName: 'Garantir Instalador do NuGet (Versão 6.x)'
+  inputs:
+    versionSpec: '6.12.0' 
 
+# 2. Restaura usando o comando padrão, especificando o diretório de pacotes
 - task: NuGetCommand@2
   displayName: 'Restaurar Pacotes NuGet (.NET Framework)'
   inputs:
-    command: 'custom'
-    customCommand: 'restore $(projectPath) -PackagesDirectory $(Build.SourcesDirectory)\packages'
+    command: 'restore'
+    restoreSolution: '$(projectPath)'
+    arguments: '-PackagesDirectory $(Build.SourcesDirectory)\packages'
 
+# 3. Executa a compilação do MSBuild
 - task: VSBuild@1
   displayName: 'Compilar Projeto WebForms / .NET Framework'
   inputs:
@@ -29,6 +35,7 @@ steps:
     configuration: '$(buildConfiguration)'
     clean: true
 
+# 4. Publica os artefatos compilados
 - task: PublishBuildArtifacts@1
   displayName: 'Publicar Artefato Gerado'
   inputs:
