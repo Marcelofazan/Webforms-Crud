@@ -5,31 +5,41 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  # Mantemos o foco nos caminhos nativos dos seus arquivos
-  solutionPath: '**/*.slnx'
+  # Mantemos o foco absoluto no seu arquivo de projeto WebForms
   projectPath: '**/Simples.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
 steps:
-# 1. SUBSTITUIÇÃO: Removemos a tarefa antiga do NuGet e usamos o MSBuild nativo para o Restore
-- task: MSBuild@1
-  displayName: 'Restaurar Pacotes NuGet (via MSBuild)'
-  inputs:
-    solution: '$(solutionPath)'
-    msbuildArguments: '/t:Restore' # Comando nativo que interpreta o .slnx e reconstrói as pastas de pacotes
+# 1. Garante a instalação do NuGet na versão estável do pool
+- task: NuGetToolInstaller@1
+  displayName: 'Garantir Instalador do NuGet'
 
-# 2. Compilação oficial do Projeto WebForms
+# 2. Executa a restauração explícita forçando a pasta 'packages' no nível correto exigido pelo .csproj
+- powershell: |
+    # Localiza o arquivo csproj dinamicamente no agente
+    $csproj = Get-Item "$(projectPath)"
+    $projectDir = $csproj.Directory.FullName
+    $solutionDir = $csproj.Directory.Parent.FullName
+    
+    Write-Host "Diretório do projeto: $projectDir"
+    Write-Host "Diretório da Solução (Raiz): $solutionDir"
+    
+    # Executa o restore injetando a pasta 'packages' exatamente um nível acima do .csproj (..\packages)
+    nuget restore "$($csproj.FullName)" -PackagesDirectory "$solutionDir\packages"
+  displayName: 'Restaurar Pacotes NuGet via PowerShell'
+
+# 3. Compilação do projeto WebForms passando explicitamente a Plataforma e Configuração
 - task: VSBuild@1
   displayName: 'Compilar Projeto WebForms / .NET Framework'
   inputs:
     solution: '$(projectPath)'
-    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
     clean: true
 
-# 3. Publicação dos artefatos (arquivos .zip prontos para o IIS)
+# 4. Publicação dos artefatos compactados prontos para o IIS
 - task: PublishBuildArtifacts@1
   displayName: 'Publicar Artefato Gerado'
   inputs:
